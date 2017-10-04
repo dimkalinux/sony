@@ -24,18 +24,22 @@ type SonyArrayOfArrayResponse struct {
 	Result [][]interface{} `json:"result"`
 }
 
+// GetResult is...
 func (r SonyArrayResponse) GetResult() []interface{} {
 	return r.Result
 }
 
+// GetResult is...
 func (r SonyArrayOfArrayResponse) GetResult() []interface{} {
 	return r.Result[0]
 }
 
+// GetID is...
 func (r SonyArrayResponse) GetID() int {
 	return r.ID
 }
 
+// GetID is...
 func (r SonyArrayOfArrayResponse) GetID() int {
 	return r.ID
 }
@@ -50,7 +54,7 @@ type SonyRequest struct {
 
 func makeRequest(endpoint string, payload *SonyRequest, res SonyResponse) error {
 	session := napping.Session{Log: false}
-	resp, err := session.Post(ApiUrl+endpoint, &payload, &res, nil)
+	resp, err := session.Post(APIURL+endpoint, &payload, &res, nil)
 
 	if err != nil {
 		log.Fatal(err)

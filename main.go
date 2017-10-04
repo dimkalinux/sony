@@ -17,16 +17,17 @@ import (
 )
 
 const (
-	// ApiUrl url.
-	ApiUrl = "http://192.168.122.1:8080/sony"
+	// APIURL url.
+	APIURL = "http://192.168.122.1:8080/sony"
 
 	// AppName is const for app name.
 	AppName = "Sony app"
 
 	// AppVersion is const defined app version.
-	AppVersion = "0.0.1"
+	AppVersion = "0.0.2"
 )
 
+// Options is...
 type Options struct {
 	Verbose []bool `short:"v" long:"verbose" description:"Verbose output"`
 	Version bool   `short:"V" long:"version" description:"Show program version"`
@@ -89,7 +90,7 @@ func discoveryCamera() error {
 	}
 
 	if len(responses) == 0 {
-		return errors.New("Can not found devices. Please connect to camery WiFi.")
+		return errors.New("can not found devices. Please connect to camery WiFi")
 	}
 
 	location := responses[0].Location.String()
