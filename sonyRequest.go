@@ -52,9 +52,9 @@ type SonyRequest struct {
 	Params  []int  `json:"params"`
 }
 
-func makeRequest(endpoint string, payload *SonyRequest, res SonyResponse) error {
+func makeRequest(APIURL string, payload *SonyRequest, res SonyResponse) error {
 	session := napping.Session{Log: false}
-	resp, err := session.Post(APIURL+endpoint, &payload, &res, nil)
+	resp, err := session.Post(APIURL, &payload, &res, nil)
 
 	if err != nil {
 		log.Fatal(err)

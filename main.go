@@ -33,6 +33,13 @@ type Options struct {
 	Version bool   `short:"V" long:"version" description:"Show program version"`
 }
 
+// APIEndpoint  is...
+type APIEndpoint struct {
+	Action string
+	URL    string
+}
+
+var endpoints []APIEndpoint
 var options Options
 var parser = flags.NewParser(&options, flags.Default)
 
@@ -61,17 +68,22 @@ func main() {
 	xmlFile, err := os.Open("sony.xml")
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
-
-	fmt.Println("Successfully Opened sony.xml")
 	defer xmlFile.Close()
 
 	byteValue, _ := ioutil.ReadAll(xmlFile)
 	var deviceInfo DeviceInfo
 	xml.Unmarshal(byteValue, &deviceInfo)
 
-	spew.Dump(deviceInfo)
+	fmt.Printf("Device name: %s (%s)\n", deviceInfo.Device.FriendlyName, deviceInfo.Device.Manufacturer)
 
+	for _, s := range deviceInfo.Device.ScalarWebAPIDeviceInfo.ServiceList.Services {
+		fmt.Printf("Action: %s, url: %s\n", s.ServiceType, s.ActionListURL)
+		endpoints = append(endpoints, APIEndpoint{s.ServiceType, s.ActionListURL + "/" + s.ServiceType})
+	}
+
+	spew.Dump(endpoints)
 	// checkAPIVersion()
 	// checkAvailableAPI()
 
@@ -80,6 +92,16 @@ func main() {
 
 func showAppVersion() {
 	fmt.Printf("%s version: %s\n\n", AppName, AppVersion)
+}
+
+func getAPIUrl(api string) string {
+	for _, s := range endpoints {
+		if s.Action == api {
+			return s.URL
+		}
+	}
+
+	return ""
 }
 
 func discoveryCamera() error {
@@ -107,13 +129,13 @@ func checkAPIVersion() {
 	p := SonyRequest{1, "getApplicationInfo", "1.0", []int{}}
 	r := SonyArrayResponse{}
 
-	err := makeRequest("/camera", &p, &r)
+	err := makeRequest(getAPIUrl("camera"), &p, &r)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Camera API name:", r.GetResult()[0])
-	fmt.Println("Camera API version:", r.GetResult()[1])
+	fmt.Println("Camera API name: ", r.GetResult()[0])
+	fmt.Println("Camera API version: ", r.GetResult()[1])
 }
 
 // checkAvailableAPI is ...
@@ -121,7 +143,7 @@ func checkAvailableAPI() {
 	p := SonyRequest{1, "getAvailableApiList", "1.0", []int{}}
 	r := SonyArrayOfArrayResponse{}
 
-	err := makeRequest("/camera", &p, &r)
+	err := makeRequest(getAPIUrl("camera"), &p, &r)
 	if err != nil {
 		log.Fatal(err)
 	}

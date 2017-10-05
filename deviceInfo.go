@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/xml"
-	"net/url"
 )
 
 // DeviceInfo is ...
@@ -25,7 +24,7 @@ type Device struct {
 	DeviceType             string                 `xml:"deviceType"`
 	FriendlyName           string                 `xml:"friendlyName"`
 	Manufacturer           string                 `xml:"manufacturer"`
-	ManufacturerURL        url.URL                `xml:"manufacturerURL"`
+	ManufacturerURL        string                 `xml:"manufacturerURL"`
 	ModelDescription       string                 `xml:"modelDescription"`
 	ModelName              string                 `xml:"modelName"`
 	UDN                    string                 `xml:"UDN"`
@@ -44,16 +43,16 @@ type ServiceListService struct {
 	XMLName     xml.Name `xml:"service"`
 	ServiceType string   `xml:"serviceType"`
 	ServiceID   string   `xml:"serviceId"`
-	SCPDURL     url.URL  `xml:"SCPDURL"`
-	ControlURL  url.URL  `xml:"controlURL"`
-	EventSubURL url.URL  `xml:"eventSubURL"`
+	SCPDURL     string   `xml:"SCPDURL"`
+	ControlURL  string   `xml:"controlURL"`
+	EventSubURL string   `xml:"eventSubURL"`
 }
 
 // ScalarWebAPIDeviceInfo is ...
 type ScalarWebAPIDeviceInfo struct {
-	XMLName     xml.Name                  `xml:"X_ScalarWebAPI_DeviceInfo"`
-	Version     string                    `xml:"X_ScalarWebAPI_Version"`
-	ServiceList []ScalarWebAPIServiceList `xml:"X_ScalarWebAPI_ServiceList"`
+	XMLName     xml.Name                `xml:"X_ScalarWebAPI_DeviceInfo"`
+	Version     string                  `xml:"X_ScalarWebAPI_Version"`
+	ServiceList ScalarWebAPIServiceList `xml:"X_ScalarWebAPI_ServiceList"`
 }
 
 // ScalarWebAPIServiceList is...
@@ -66,5 +65,5 @@ type ScalarWebAPIServiceList struct {
 type ScalarWebAPIServiceListService struct {
 	XMLName       xml.Name `xml:"X_ScalarWebAPI_Service"`
 	ServiceType   string   `xml:"X_ScalarWebAPI_ServiceType"`
-	ActionListURL url.URL  `xml:"X_ScalarWebAPI_ActionList_URL"`
+	ActionListURL string   `xml:"X_ScalarWebAPI_ActionList_URL"`
 }
