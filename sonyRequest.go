@@ -46,14 +46,14 @@ func (r SonyArrayOfArrayResponse) GetID() int {
 
 // SonyRequest structure.
 type SonyRequest struct {
-	ID      int    `json:"id"`
-	Method  string `json:"method"`
-	Version string `json:"version"`
-	Params  []int  `json:"params"`
+	ID      int      `json:"id"`
+	Method  string   `json:"method"`
+	Version string   `json:"version"`
+	Params  []string `json:"params"`
 }
 
 func makeRequest(APIURL string, payload *SonyRequest, res SonyResponse) error {
-	session := napping.Session{Log: false}
+	session := napping.Session{Log: true}
 	resp, err := session.Post(APIURL, &payload, &res, nil)
 
 	if err != nil {

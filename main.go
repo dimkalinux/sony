@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -17,9 +16,6 @@ import (
 )
 
 const (
-	// APIURL url.
-	APIURL = "http://192.168.122.1:8080/sony"
-
 	// AppName is const for app name.
 	AppName = "Sony app"
 
@@ -39,7 +35,7 @@ type APIEndpoint struct {
 	URL    string
 }
 
-var endpoints []APIEndpoint
+var endpoints = make(map[string]string, 10)
 var options Options
 var parser = flags.NewParser(&options, flags.Default)
 
@@ -61,32 +57,16 @@ func main() {
 		os.Exit(0)
 	}
 
-	// if err := discoveryCamera(); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	xmlFile, err := os.Open("sony.xml")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer xmlFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(xmlFile)
-	var deviceInfo DeviceInfo
-	xml.Unmarshal(byteValue, &deviceInfo)
-
-	fmt.Printf("Device name: %s (%s)\n", deviceInfo.Device.FriendlyName, deviceInfo.Device.Manufacturer)
-
-	for _, s := range deviceInfo.Device.ScalarWebAPIDeviceInfo.ServiceList.Services {
-		fmt.Printf("Action: %s, url: %s\n", s.ServiceType, s.ActionListURL)
-		endpoints = append(endpoints, APIEndpoint{s.ServiceType, s.ActionListURL + "/" + s.ServiceType})
+	if err := discoveryCamera(endpoints); err != nil {
+		panic(err)
 	}
 
-	spew.Dump(endpoints)
-	// checkAPIVersion()
-	// checkAvailableAPI()
+	checkAPIVersion()
+	checkAvailableAPI()
+	checkSupportedFunctions()
+	listFiles()
 
+	fmt.Println("")
 	fmt.Println("")
 }
 
@@ -95,16 +75,15 @@ func showAppVersion() {
 }
 
 func getAPIUrl(api string) string {
-	for _, s := range endpoints {
-		if s.Action == api {
-			return s.URL
-		}
+	u, ok := endpoints[api]
+	if ok == true {
+		return u
 	}
 
 	return ""
 }
 
-func discoveryCamera() error {
+func discoveryCamera(e map[string]string) error {
 	responses, err := ssdp.Search("urn:schemas-sony-com:service:ScalarWebAPI:1", 2*time.Second)
 	if err != nil {
 		log.Fatal(err)
@@ -118,15 +97,23 @@ func discoveryCamera() error {
 	location := responses[0].Location.String()
 	session := napping.Session{Log: false}
 	resp, _ := session.Get(location, nil, nil, nil)
+	b := []byte(resp.RawText())
 
-	log.Print(resp.RawText())
+	var deviceInfo DeviceInfo
+	xml.Unmarshal(b, &deviceInfo)
+
+	fmt.Printf("Discovered device:\t%s (%s)\n", deviceInfo.Device.FriendlyName, deviceInfo.Device.Manufacturer)
+
+	for _, s := range deviceInfo.Device.ScalarWebAPIDeviceInfo.ServiceList.Services {
+		e[s.ServiceType] = s.ActionListURL + "/" + s.ServiceType
+	}
 
 	return nil
 }
 
 // checkAPIVersion is ...
 func checkAPIVersion() {
-	p := SonyRequest{1, "getApplicationInfo", "1.0", []int{}}
+	p := SonyRequest{1, "getApplicationInfo", "1.0", nil}
 	r := SonyArrayResponse{}
 
 	err := makeRequest(getAPIUrl("camera"), &p, &r)
@@ -134,13 +121,13 @@ func checkAPIVersion() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Camera API name: ", r.GetResult()[0])
-	fmt.Println("Camera API version: ", r.GetResult()[1])
+	fmt.Println("Camera API name:\t", strings.TrimSpace(r.GetResult()[0].(string)))
+	fmt.Println("Camera API version:\t", strings.TrimSpace(r.GetResult()[1].(string)))
 }
 
 // checkAvailableAPI is ...
 func checkAvailableAPI() {
-	p := SonyRequest{1, "getAvailableApiList", "1.0", []int{}}
+	p := SonyRequest{1, "getAvailableApiList", "1.0", nil}
 	r := SonyArrayOfArrayResponse{}
 
 	err := makeRequest(getAPIUrl("camera"), &p, &r)
@@ -153,5 +140,37 @@ func checkAvailableAPI() {
 		s = append(s, val.(string))
 	}
 
-	fmt.Print("Supported: " + strings.Join(s, ", "))
+	fmt.Print("Supported:\t\t" + strings.Join(s, ", "))
+}
+
+func checkSupportedFunctions() {
+	p := SonyRequest{1, "getSupportedCameraFunction", "1.0", []string{}}
+	r := SonyArrayResponse{}
+
+	err := makeRequest(getAPIUrl("camera"), &p, &r)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	spew.Dump(r.GetResult())
+
+	// var s []string
+	// for _, val := range r.GetResult() {
+	// 	s = append(s, val.(string))
+	// }
+	//
+	// fmt.Print("Supported:\t\t" + strings.Join(s, ", "))
+
+}
+
+func listFiles() {
+	p := SonyRequest{1, "setCameraFunction", "1.0", []string{"Contents Transfer"}}
+	r := SonyArrayResponse{}
+
+	err := makeRequest(getAPIUrl("camera"), &p, &r)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	spew.Dump(r.GetResult())
 }
